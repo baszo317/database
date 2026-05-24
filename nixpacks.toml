@@ -1,5 +1,0 @@
-[phases.setup]
-nixPkgs = ["nodejs"]
-
-[start]
-cmd = "cd split-api && npm start"
