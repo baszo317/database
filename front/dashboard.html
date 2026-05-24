@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>S.P.L.I.T - 紀錄空間</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;900&display=swap');
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'DM Sans', 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background: #ffffff;
+            color: #000000;
+            min-height: 100vh;
+            padding: 40px;
+        }
+
+        /* ── 頂部導覽列 ── */
+        .header {
+            max-width: 1200px;
+            margin: 0 auto 48px auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h2 {
+            font-size: 1.9rem;
+            font-weight: 900;
+            background-color: #2ca42c;
+            color: #ffffff;
+            padding: 8px 22px;
+            border-radius: 6px;
+            letter-spacing: 1px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+        }
+
+        .user-profile {
+            color: #555555;
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        .btn-logout {
+            padding: 8px 20px;
+            background: #ffffff;
+            color: #000000;
+            border: 2px solid #000000;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 0.88rem;
+            transition: all 0.2s ease;
+        }
+
+        .btn-logout:hover {
+            background: #fee2e2;
+            border-color: #dc2626;
+            color: #dc2626;
+        }
+
+        /* ── 空間網格 ── */
+        .main-content {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .spaces-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 24px;
+        }
+
+        /* ── 空間卡片：正方形黑框 ── */
+        .space-card {
+            background: #ffffff;
+            border: 2px solid #000000;
+            border-radius: 16px;
+            aspect-ratio: 1 / 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 22px;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+            position: relative;
+            text-decoration: none;
+            color: #000000;
+        }
+
+        /* owner 卡片左側綠色標記 */
+        .space-card.owner {
+            border-left: 5px solid #2ca42c;
+        }
+
+        /* 個人卡片左側特殊標記 */
+        .space-card.personal {
+            border-left: 5px solid #000000;
+            background: #f9f9f9;
+        }
+
+        .space-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 4px 4px 0px #000000;
+            border-color: #2ca42c;
+        }
+
+        .space-card.personal:hover {
+            border-color: #000000;
+            box-shadow: 4px 4px 0px #000000;
+        }
+
+        .space-name {
+            font-size: 1.2rem;
+            font-weight: 800;
+            word-break: break-all;
+            line-height: 1.3;
+        }
+
+        .space-meta {
+            font-size: 0.82rem;
+            color: #666666;
+            font-weight: 600;
+            margin-top: 6px;
+        }
+
+        /* 卡片底部操作按鈕群 */
+        .card-actions {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-top: auto;
+            padding-top: 10px;
+        }
+
+        .action-btn {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            cursor: pointer;
+            border: 1.5px solid #000000;
+            background: #ffffff;
+            color: #000000;
+            transition: all 0.2s ease;
+        }
+
+        .action-btn:hover {
+            background: #2ca42c;
+            border-color: #2ca42c;
+            color: #ffffff;
+        }
+
+        .action-btn.danger {
+            border-color: #dc2626;
+            color: #dc2626;
+        }
+
+        .action-btn.danger:hover {
+            background: #dc2626;
+            border-color: #dc2626;
+            color: #ffffff;
+        }
+
+        /* ── 加號新增按鈕 ── */
+        .btn-add-space {
+            background: #f4f4f5;
+            border: 2px dashed #cccccc;
+            border-radius: 16px;
+            aspect-ratio: 1 / 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3.5rem;
+            color: #888888;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-add-space:hover {
+            background: #e4e4e7;
+            color: #2ca42c;
+            border-color: #2ca42c;
+        }
+
+        /* ── Modal ── */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.45);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal {
+            background: #ffffff;
+            border: 2px solid #000000;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 440px;
+            padding: 32px;
+            box-shadow: 6px 6px 0px #000000;
+            transform: scale(0.95);
+            transition: transform 0.2s ease;
+        }
+
+        .modal-overlay.active .modal {
+            transform: scale(1);
+        }
+
+        /* Modal Tab */
+        .modal-tabs {
+            display: flex;
+            gap: 0;
+            margin-bottom: 24px;
+            border-bottom: 2px solid #e4e4e7;
+            padding-bottom: 0;
+        }
+
+        .modal-tab {
+            font-size: 1rem;
+            font-weight: 800;
+            color: #aaaaaa;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 6px 14px 12px;
+            transition: all 0.2s ease;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+        }
+
+        .modal-tab.active {
+            color: #2ca42c;
+            border-bottom-color: #2ca42c;
+        }
+
+        /* Modal 表單 */
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 7px;
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 11px 14px;
+            border: 2px solid #000000;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #000000;
+            transition: border-color 0.2s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #2ca42c;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #2ca42c;
+            cursor: pointer;
+        }
+
+        /* Modal 訊息 */
+        .modal-msg {
+            font-size: 0.87rem;
+            font-weight: 700;
+            text-align: center;
+            min-height: 20px;
+            margin-bottom: 8px;
+        }
+
+        .modal-msg.error   { color: #dc2626; }
+        .modal-msg.success { color: #16a34a; }
+
+        /* Modal 底部按鈕 */
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .btn-modal {
+            padding: 10px 24px;
+            font-weight: 700;
+            font-size: 0.92rem;
+            border-radius: 50px;
+            cursor: pointer;
+            border: 2px solid #000000;
+            transition: all 0.2s ease;
+        }
+
+        .btn-modal-cancel {
+            background: #ffffff;
+            color: #000000;
+        }
+
+        .btn-modal-cancel:hover { background: #f4f4f5; }
+
+        .btn-modal-submit {
+            background: #000000;
+            color: #ffffff;
+        }
+
+        .btn-modal-submit:hover {
+            background: #2ca42c;
+            border-color: #2ca42c;
+        }
+
+        .btn-modal-submit:disabled {
+            background: #cccccc;
+            border-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        /* 載入狀態 */
+        .loading-text {
+            color: #888888;
+            font-weight: 600;
+            font-size: 1rem;
+            padding: 20px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2>S.P.L.I.T</h2>
+        <div class="header-right">
+            <span class="user-profile" id="userGreeting">載入中...</span>
+            <button class="btn-logout" onclick="logout()">登出</button>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="spaces-grid" id="spacesContainer">
+            <div class="loading-text">空間載入中...</div>
+        </div>
+    </div>
+
+    <!-- 建立／加入空間 Modal -->
+    <div class="modal-overlay" id="spaceModal">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-tabs">
+                <button class="modal-tab active" id="tabCreate" onclick="switchTab('create')">建立新空間</button>
+                <button class="modal-tab"         id="tabJoin"   onclick="switchTab('join')">加入空間</button>
+            </div>
+
+            <div id="createPanel">
+                <div class="form-group">
+                    <label for="newSpaceName">空間名稱</label>
+                    <input type="text" class="form-control" id="newSpaceName" placeholder="例如：519 寢室、墾丁旅遊">
+                </div>
+                <div class="form-group">
+                    <label class="checkbox-group">
+                        <input type="checkbox" id="isPublic">
+                        <span>開啟公開空間（允許他人檢視）</span>
+                    </label>
+                </div>
+            </div>
+
+            <div id="joinPanel" style="display:none;">
+                <div class="form-group">
+                    <label for="inviteCodeInput">房間邀請碼</label>
+                    <input type="text" class="form-control" id="inviteCodeInput" placeholder="請輸入邀請碼">
+                </div>
+            </div>
+
+            <div class="modal-msg" id="modalMsg"></div>
+
+            <div class="modal-footer">
+                <button class="btn-modal btn-modal-cancel" onclick="closeModal()">取消</button>
+                <button class="btn-modal btn-modal-submit" id="modalConfirmBtn" onclick="confirmModal()">建立</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API = 'http://localhost:3000/api';
+        let currentTab = 'create';
+
+        function authHeaders() {
+            const token = localStorage.getItem('split_token');
+            return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+        }
+
+        // ── 初始化 ──
+        window.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('split_token');
+            if (!token) { location.href = 'auth.html'; return; }
+
+            const user = JSON.parse(localStorage.getItem('split_user') || '{}');
+            document.getElementById('userGreeting').textContent =
+                `歡迎回來，${user.username || user.user_name || '使用者'}`;
+
+            loadSpaces();
+        });
+
+
+
+        function logout() {
+            localStorage.clear();
+            location.href = 'auth.html';
+        }
+
+        // ── 載入並渲染空間 ──
+        async function loadSpaces() {
+            const container = document.getElementById('spacesContainer');
+            try {
+                const res = await fetch(`${API}/spaces`, { headers: authHeaders() });
+                if (res.status === 401) { logout(); return; }
+                const data = await res.json();
+                console.log('【spaces API 回傳】', JSON.stringify(data));
+                renderSpaces(data.spaces || []);
+            } catch (err) {
+                container.innerHTML = '<div class="loading-text" style="color:#dc2626;">無法連線到伺服器</div>';
+            }
+        }
+
+        function renderSpaces(spaces) {
+            const container = document.getElementById('spacesContainer');
+            container.innerHTML = '';
+
+            // 固定「個人」空間卡片（第二版新功能）
+            const personalCard = document.createElement('a');
+           personalCard.href = 'space.html#personal';
+            personalCard.className = 'space-card personal';
+            personalCard.innerHTML = `
+                <div>
+                    <div class="space-name">個人</div>
+                    <div class="space-meta">專屬私密記帳 · 不可邀請</div>
+                </div>
+            `;
+            container.appendChild(personalCard);
+
+            // 群組空間卡片
+            spaces.forEach(s => {
+                console.log('【space 物件】', JSON.stringify(s));
+                const card = document.createElement('div');
+                card.className = `space-card ${s.role === 'owner' ? 'owner' : ''}`;
+                card.addEventListener('click', (e) => {
+                    console.log('【卡片點擊】target:', e.target.tagName, '| closest button:', e.target.closest('button'), '| space_id:', s.space_id);
+                    if (e.target.closest('button')) return;
+                    console.log('【跳轉】space.html?id=' + s.space_id);
+                  window.location.href = `space.html#${s.space_id}`;
+                });
+
+                const isPublicLabel = s.is_public ? '公開空間' : '私有群組';
+                const roleLabel = s.role === 'owner' ? '擁有者' : '成員';
+
+                card.innerHTML = `
+                    <div>
+                        <div class="space-name">${escapeHtml(s.space_name)}</div>
+                        <div class="space-meta">${roleLabel} · ${s.member_count} 人 · ${isPublicLabel}</div>
+                    </div>
+                    <div class="card-actions">
+                        ${s.role === 'owner'
+                            ? `<button class="action-btn" onclick="copyInvite(event,'${s.space_id}')">📋 邀請碼</button>
+                               <button class="action-btn danger" onclick="deleteSpace(event,'${s.space_id}','${escapeHtml(s.space_name)}')">🗑 刪除</button>`
+                            : `<button class="action-btn danger" onclick="leaveSpace(event,'${s.space_id}','${escapeHtml(s.space_name)}')">離開</button>`
+                        }
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+
+            // 加號新增按鈕
+            const addBtn = document.createElement('div');
+            addBtn.className = 'btn-add-space';
+            addBtn.textContent = '+';
+            addBtn.onclick = openModal;
+            container.appendChild(addBtn);
+        }
+
+        // ── 複製邀請碼 ──
+        async function copyInvite(e, spaceId) {
+            try {
+                const res = await fetch(`${API}/spaces/${spaceId}`, { headers: authHeaders() });
+                const data = await res.json();
+                const code = data.space?.invite_code;
+                if (code) {
+                    await navigator.clipboard.writeText(code);
+                    alert(`邀請碼已複製：\n${code}`);
+                }
+            } catch (err) { alert('複製失敗，請重試'); }
+        }
+
+        // ── 刪除空間 ──
+        async function deleteSpace(e, spaceId, spaceName) {
+            if (!confirm(`確定要刪除「${spaceName}」嗎？\n此操作無法復原，空間內所有資料將一併刪除。`)) return;
+            try {
+                const res = await fetch(`${API}/spaces/${spaceId}`, {
+                    method: 'DELETE', headers: authHeaders()
+                });
+                const data = await res.json();
+                if (!res.ok) { alert(data.message || '刪除失敗'); return; }
+                loadSpaces();
+            } catch (err) { alert('無法連線到伺服器'); }
+        }
+
+        // ── 離開空間 ──
+        async function leaveSpace(e, spaceId, spaceName) {
+            if (!confirm(`確定要離開「${spaceName}」嗎？`)) return;
+            try {
+                const user = JSON.parse(localStorage.getItem('split_user') || '{}');
+                const res = await fetch(`${API}/spaces/${spaceId}/members/${user.user_id}`, {
+                    method: 'DELETE', headers: authHeaders()
+                });
+                const data = await res.json();
+                if (!res.ok) { alert(data.message || '離開失敗'); return; }
+                loadSpaces();
+            } catch (err) { alert('無法連線到伺服器'); }
+        }
+
+        // ── Modal 開關 ──
+        function openModal() {
+            document.getElementById('spaceModal').classList.add('active');
+            switchTab('create');
+        }
+
+        function closeModal() {
+            document.getElementById('spaceModal').classList.remove('active');
+            document.getElementById('newSpaceName').value = '';
+            document.getElementById('inviteCodeInput').value = '';
+            document.getElementById('isPublic').checked = false;
+            clearModalMsg();
+            document.getElementById('modalConfirmBtn').disabled = false;
+            switchTab('create');
+        }
+
+        // Modal 點擊背景關閉
+        document.getElementById('spaceModal').addEventListener('click', closeModal);
+
+        // ── Tab 切換 ──
+        function switchTab(tab) {
+            currentTab = tab;
+            document.getElementById('tabCreate').className = `modal-tab${tab === 'create' ? ' active' : ''}`;
+            document.getElementById('tabJoin').className   = `modal-tab${tab === 'join'   ? ' active' : ''}`;
+            document.getElementById('createPanel').style.display = tab === 'create' ? 'block' : 'none';
+            document.getElementById('joinPanel').style.display   = tab === 'join'   ? 'block' : 'none';
+            document.getElementById('modalConfirmBtn').textContent = tab === 'create' ? '建立' : '加入';
+            clearModalMsg();
+        }
+
+        // ── 訊息提示 ──
+        function showModalMsg(text, type) {
+            const el = document.getElementById('modalMsg');
+            el.textContent = text;
+            el.className = 'modal-msg ' + type;
+        }
+
+        function clearModalMsg() {
+            const el = document.getElementById('modalMsg');
+            el.textContent = '';
+            el.className = 'modal-msg';
+        }
+
+        // ── 建立／加入送出 ──
+        async function confirmModal() {
+            const btn = document.getElementById('modalConfirmBtn');
+            btn.disabled = true;
+            clearModalMsg();
+
+            try {
+                if (currentTab === 'create') {
+                    const name = document.getElementById('newSpaceName').value.trim();
+                    const isPublic = document.getElementById('isPublic').checked;
+                    if (!name) { showModalMsg('請輸入空間名稱', 'error'); btn.disabled = false; return; }
+
+                    const res = await fetch(`${API}/spaces`, {
+                        method: 'POST', headers: authHeaders(),
+                        body: JSON.stringify({ space_name: name, is_public: isPublic })
+                    });
+                    const data = await res.json();
+                    if (!res.ok) { showModalMsg(data.message || '建立失敗', 'error'); btn.disabled = false; return; }
+
+                    showModalMsg(`空間「${name}」建立成功！`, 'success');
+                    setTimeout(() => { closeModal(); loadSpaces(); }, 800);
+
+                } else {
+                    const code = document.getElementById('inviteCodeInput').value.trim();
+                    if (!code) { showModalMsg('請輸入邀請碼', 'error'); btn.disabled = false; return; }
+
+                    const res = await fetch(`${API}/spaces/join`, {
+                        method: 'POST', headers: authHeaders(),
+                        body: JSON.stringify({ invite_code: code })
+                    });
+                    const data = await res.json();
+                    if (!res.ok) { showModalMsg(data.message || '加入失敗，邀請碼無效', 'error'); btn.disabled = false; return; }
+
+                    showModalMsg(data.message || '加入成功！', 'success');
+                    setTimeout(() => { closeModal(); loadSpaces(); }, 800);
+                }
+            } catch (err) {
+                showModalMsg('無法連線到伺服器', 'error');
+                btn.disabled = false;
+            }
+        }
+
+        // XSS 防護（第二版新功能）
+        function escapeHtml(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+    </script>
+</body>
+</html>

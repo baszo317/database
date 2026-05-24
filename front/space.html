@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>S.P.L.I.T - 記帳空間</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;900&display=swap');
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'DM Sans', 'Segoe UI', sans-serif; }
+        body { background: #ffffff; color: #000000; min-height: 100vh; display: flex; }
+
+        .sidebar {
+            width: 280px; border-right: 2px solid #000000; padding: 36px 20px;
+            display: flex; flex-direction: column; justify-content: space-between;
+            position: fixed; top: 0; bottom: 0; left: 0; background: #ffffff; z-index: 10;
+        }
+        .space-title {
+            font-size: 1.5rem; font-weight: 900; background-color: #2ca42c; color: #ffffff;
+            padding: 10px 16px; border-radius: 6px; word-break: break-all;
+            text-align: center; margin-bottom: 32px; line-height: 1.3;
+        }
+        .nav-menu { display: flex; flex-direction: column; gap: 10px; flex-grow: 1; }
+        .nav-btn {
+            width: 100%; padding: 13px 14px; background: #ffffff; color: #000000;
+            border: 2px solid #000000; border-radius: 8px; font-size: 0.92rem;
+            font-weight: 700; text-align: left; cursor: pointer; transition: all 0.2s ease;
+        }
+        .nav-btn:hover, .nav-btn.active { background: #2ca42c; color: #ffffff; border-color: #2ca42c; }
+        .btn-back {
+            display: block; padding: 12px; background: #000000; color: #ffffff;
+            border: 2px solid #000000; border-radius: 50px; font-weight: 700;
+            cursor: pointer; text-align: center; text-decoration: none; transition: all 0.2s ease; margin-top: 20px;
+        }
+        .btn-back:hover { background: #ffffff; color: #000000; }
+
+        .main-panel { margin-left: 280px; flex-grow: 1; padding: 40px 48px; }
+        .panel-content { display: none; }
+        .panel-content.active { display: block; }
+        .panel-header { font-size: 1.55rem; font-weight: 900; margin-bottom: 24px; border-bottom: 3px solid #000000; padding-bottom: 10px; }
+
+        .alert { padding: 10px 16px; border-radius: 8px; font-size: 0.88rem; font-weight: 700; margin-bottom: 16px; display: none; }
+        .alert.show { display: block; }
+        .alert.error   { background: #fee2e2; color: #dc2626; border: 1.5px solid #dc2626; }
+        .alert.success { background: #dcfce7; color: #16a34a; border: 1.5px solid #16a34a; }
+
+        .form-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px; background: #f9f9f9; padding: 22px;
+            border: 2px solid #000000; border-radius: 12px; margin-bottom: 28px;
+        }
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        .form-group label { font-weight: 700; font-size: 0.88rem; }
+        .form-control {
+            padding: 10px 12px; border: 2px solid #000000; border-radius: 6px;
+            font-size: 0.92rem; background: #ffffff; color: #000; transition: border-color 0.2s;
+        }
+        .form-control:focus { outline: none; border-color: #2ca42c; }
+        .form-submit-container { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 10px; margin-top: 6px; align-items: center; }
+
+        .btn-submit {
+            padding: 10px 26px; background: #000000; color: #ffffff;
+            border: 2px solid #000000; border-radius: 50px; font-weight: 700;
+            font-size: 0.92rem; cursor: pointer; transition: all 0.2s ease;
+        }
+        .btn-submit:hover:not(:disabled) { background: #2ca42c; border-color: #2ca42c; }
+        .btn-submit:disabled { background: #cccccc; border-color: #cccccc; cursor: not-allowed; }
+
+        .data-table { width: 100%; border-collapse: collapse; }
+        .data-table th, .data-table td { border-bottom: 1px solid #e4e4e7; padding: 13px 14px; text-align: left; font-size: 0.9rem; }
+        .data-table th { background: #f4f4f5; font-weight: 700; font-size: 0.85rem; }
+        .data-table tbody tr:hover { background: #fafafa; }
+        .badge-income  { color: #16a34a; font-weight: 700; }
+        .badge-expense { color: #dc2626; font-weight: 700; }
+
+        .btn-action {
+            padding: 5px 12px; background: #ffffff; border: 1.5px solid #000000;
+            border-radius: 20px; font-weight: 700; font-size: 0.8rem; cursor: pointer; transition: all 0.2s ease;
+        }
+        .btn-action:hover { background: #2ca42c; color: #fff; border-color: #2ca42c; }
+        .btn-action.danger { border-color: #dc2626; color: #dc2626; }
+        .btn-action.danger:hover { background: #dc2626; color: #fff; }
+
+        .debt-king-card {
+            background: #fffbeb; border: 2px solid #f59e0b; border-radius: 12px;
+            padding: 18px 20px; margin-bottom: 24px; display: flex; align-items: center; gap: 14px;
+        }
+        .king-crown { font-size: 2.2rem; }
+        .king-info h4 { font-size: 1rem; color: #b45309; font-weight: 900; }
+        .king-info p  { font-size: 0.9rem; color: #78350f; margin-top: 4px; }
+
+        .budget-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 18px; margin-bottom: 28px; }
+        .budget-card { border: 2px solid #000000; border-radius: 12px; padding: 18px; }
+        .budget-card-name { font-size: 1rem; font-weight: 800; margin-bottom: 4px; }
+        .budget-card-meta { font-size: 0.82rem; color: #666; margin-bottom: 12px; }
+        .budget-numbers { display: flex; justify-content: space-between; font-size: 0.88rem; font-weight: 700; margin-bottom: 8px; }
+        .progress-track { background: #e4e4e7; border-radius: 50px; height: 12px; overflow: hidden; border: 1px solid #d4d4d8; }
+        .progress-fill { height: 100%; border-radius: 50px; background: #2ca42c; transition: width 0.4s ease; }
+        .progress-fill.danger { background: #dc2626; }
+        .budget-exceeded { font-size: 0.8rem; font-weight: 700; color: #dc2626; margin-top: 6px; }
+        .budget-card-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+
+        .empty-state { text-align: center; padding: 40px 20px; color: #aaaaaa; font-weight: 600; font-size: 0.95rem; }
+
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
+        }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .modal {
+            background: #ffffff; border: 2px solid #000000; border-radius: 16px;
+            padding: 28px; width: 100%; max-width: 420px;
+            box-shadow: 6px 6px 0px #000000; transform: scale(0.95); transition: transform 0.2s ease;
+        }
+        .modal-overlay.active .modal { transform: scale(1); }
+        .modal h4 { font-size: 1.1rem; font-weight: 900; margin-bottom: 18px; }
+        .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+        .btn-cancel { padding: 9px 20px; background: #fff; border: 2px solid #000; border-radius: 50px; font-weight: 700; cursor: pointer; }
+        .btn-cancel:hover { background: #f4f4f5; }
+
+        .member-split-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 8px; }
+        .member-split-row { display: flex; align-items: center; gap: 10px; }
+        .member-split-row label { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 0.9rem; flex: 1; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <div>
+        <div class="space-title" id="renderSpaceName">載入空間...</div>
+        <div class="nav-menu">
+            <button class="nav-btn active" onclick="switchPanel('transactions', this)">紀錄收支明細</button>
+            <button class="nav-btn" id="navItems"  onclick="switchPanel('items', this)">分攤公共財</button>
+            <button class="nav-btn" id="navDebts"  onclick="switchPanel('debts', this)">追蹤與紀錄債務</button>
+            <button class="nav-btn" onclick="switchPanel('budgets', this)">設定與監控預算</button>
+        </div>
+    </div>
+    <a href="dashboard.html" class="btn-back">← Back</a>
+</div>
+
+<div class="main-panel">
+
+    <!-- 收支明細 -->
+    <div id="panel-transactions" class="panel-content active">
+        <div class="panel-header">收支明細紀錄</div>
+        <div class="alert" id="tx-alert"></div>
+        <div class="form-grid">
+            <div class="form-group">
+                <label>交易類型</label>
+                <select class="form-control" id="txType">
+                    <option value="expense">支出</option>
+                    <option value="income">收入</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>金額</label>
+                <input type="number" class="form-control" id="txAmount" placeholder="請輸入金額" min="0.01" step="0.01">
+            </div>
+            <div class="form-group">
+                <label>日期</label>
+                <input type="date" class="form-control" id="txDate">
+            </div>
+            <div class="form-group">
+                <label>分類</label>
+                <select class="form-control" id="txCategory">
+                    <option value="">不分類</option>
+                    <option value="1">飲食</option>
+                    <option value="2">娛樂</option>
+                    <option value="3">水電開銷</option>
+                </select>
+            </div>
+            <div class="form-group" style="grid-column:span 2;">
+                <label>說明/備註</label>
+                <input type="text" class="form-control" id="txDesc" placeholder="例如：買午餐、繳交公費">
+            </div>
+            <div class="form-submit-container">
+                <button class="btn-submit" id="txSubmitBtn" onclick="addTransaction()">送出記帳</button>
+            </div>
+        </div>
+        <table class="data-table">
+            <thead><tr><th>日期</th><th>記錄者</th><th>類型</th><th>分類</th><th>說明</th><th>金額</th><th>操作</th></tr></thead>
+            <tbody id="txTableBody"><tr><td colspan="7" class="empty-state">載入中...</td></tr></tbody>
+        </table>
+    </div>
+
+    <!-- 公共財分攤 -->
+    <div id="panel-items" class="panel-content">
+        <div class="panel-header">共用公共財分攤</div>
+        <div class="alert" id="item-alert"></div>
+        <div class="form-grid">
+            <div class="form-group">
+                <label>物品名稱</label>
+                <input type="text" class="form-control" id="itemName" placeholder="例如：好市多衛生紙">
+            </div>
+            <div class="form-group">
+                <label>單價</label>
+                <input type="number" class="form-control" id="itemPrice" placeholder="單件金額" min="0.01" step="0.01">
+            </div>
+            <div class="form-group">
+                <label>數量</label>
+                <input type="number" class="form-control" id="itemQty" value="1" min="1">
+            </div>
+            <div class="form-group">
+                <label>持有者（保管人）</label>
+                <select class="form-control" id="itemHolder"></select>
+            </div>
+            <div class="form-submit-container">
+                <button class="btn-submit" id="itemSubmitBtn" onclick="openSplitModal()">下一步：設定分攤</button>
+            </div>
+        </div>
+        <table class="data-table">
+            <thead><tr><th>物品名稱</th><th>單價</th><th>數量</th><th>總價</th><th>代墊人</th><th>保管人</th><th>建立時間</th><th>操作</th></tr></thead>
+            <tbody id="itemTableBody"><tr><td colspan="8" class="empty-state">載入中...</td></tr></tbody>
+        </table>
+    </div>
+
+    <!-- 債務追蹤 -->
+    <div id="panel-debts" class="panel-content">
+        <div class="panel-header">債務追蹤看板</div>
+        <div class="debt-king-card">
+            <div class="king-crown">👑</div>
+            <div class="king-info">
+                <h4>我的債務概況</h4>
+                <p id="debtSummaryDisplay">載入中...</p>
+            </div>
+        </div>
+        <div class="alert" id="debt-alert"></div>
+        <div class="form-grid">
+            <div class="form-group">
+                <label>欠債者（債務人）</label>
+                <select class="form-control" id="debtorId"></select>
+            </div>
+            <div class="form-group">
+                <label>債主（誰出錢）</label>
+                <select class="form-control" id="creditorId"></select>
+            </div>
+            <div class="form-group">
+                <label>欠債金額</label>
+                <input type="number" class="form-control" id="debtAmount" placeholder="請輸入金額" min="0.01" step="0.01">
+            </div>
+            <div class="form-group" style="grid-column:span 2;">
+                <label>原因/事件</label>
+                <input type="text" class="form-control" id="debtReason" placeholder="例如：昨天晚餐幫忙代墊">
+            </div>
+            <div class="form-submit-container">
+                <button class="btn-submit" id="debtSubmitBtn" onclick="addManualDebt()">補登債務</button>
+            </div>
+        </div>
+        <table class="data-table">
+            <thead><tr><th>債務人</th><th>債主</th><th>原始金額</th><th>剩餘金額</th><th>來源</th><th>狀態</th><th>操作</th></tr></thead>
+            <tbody id="debtTableBody"><tr><td colspan="7" class="empty-state">載入中...</td></tr></tbody>
+        </table>
+    </div>
+
+    <!-- 預算監控 -->
+    <div id="panel-budgets" class="panel-content">
+        <div class="panel-header">月度預算與監控</div>
+        <div class="alert" id="budget-alert"></div>
+        <div id="budgetCards" class="budget-cards"></div>
+        <div class="form-grid">
+            <div class="form-group">
+                <label>預算名稱</label>
+                <input type="text" class="form-control" id="budgetName" placeholder="例如：五月份總預算">
+            </div>
+            <div class="form-group">
+                <label>預算金額</label>
+                <input type="number" class="form-control" id="budgetAmountInput" placeholder="請輸入金額上限" min="1">
+            </div>
+            <div class="form-group">
+                <label>限制分類（選填）</label>
+                <select class="form-control" id="budgetCategory">
+                    <option value="">不限種類</option>
+                    <option value="1">飲食</option>
+                    <option value="2">娛樂</option>
+                    <option value="3">水電開銷</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>開始日期</label>
+                <input type="date" class="form-control" id="budgetStart">
+            </div>
+            <div class="form-group">
+                <label>結束日期</label>
+                <input type="date" class="form-control" id="budgetEnd">
+            </div>
+            <div class="form-submit-container">
+                <button class="btn-submit" id="budgetSubmitBtn" onclick="addBudget()">建立監控預算</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 還款 Modal -->
+<div class="modal-overlay" id="settleModal">
+    <div class="modal" onclick="event.stopPropagation()">
+        <h4>確認還款</h4>
+        <div class="form-group">
+            <label>還款金額（剩餘：<span id="settleRemaining">-</span>）</label>
+            <input type="number" class="form-control" id="settleAmount" placeholder="請輸入還款金額" min="0.01" step="0.01">
+        </div>
+        <div class="modal-footer">
+            <button class="btn-cancel" onclick="closeSettleModal()">取消</button>
+            <button class="btn-submit" id="settleConfirmBtn" onclick="confirmSettle()">確認還款</button>
+        </div>
+    </div>
+</div>
+
+<!-- 分攤 Modal -->
+<div class="modal-overlay" id="splitModal">
+    <div class="modal" onclick="event.stopPropagation()" style="max-width:460px;">
+        <h4>設定分攤成員與金額</h4>
+        <p style="font-size:0.85rem;color:#666;margin-bottom:16px;">
+            總金額：<strong id="splitTotalDisplay">-</strong>　代墊人：<strong id="splitBuyerDisplay">你</strong>
+        </p>
+        <div class="member-split-list" id="splitMemberList"></div>
+        <div class="alert" id="split-alert" style="margin-top:10px;"></div>
+        <div class="modal-footer">
+            <button class="btn-cancel" onclick="closeSplitModal()">取消</button>
+            <button class="btn-submit" id="splitConfirmBtn" onclick="submitItem()">確認新增並拆帳</button>
+        </div>
+    </div>
+</div>
+
+<!-- 編輯預算 Modal -->
+<div class="modal-overlay" id="editBudgetModal">
+    <div class="modal" onclick="event.stopPropagation()">
+        <h4>編輯預算</h4>
+        <input type="hidden" id="editBudgetId">
+        <div class="form-group" style="margin-bottom:14px;">
+            <label>預算名稱</label>
+            <input type="text" class="form-control" id="editBudgetName">
+        </div>
+        <div class="form-group" style="margin-bottom:14px;">
+            <label>預算金額</label>
+            <input type="number" class="form-control" id="editBudgetAmount" min="1">
+        </div>
+        <div class="form-group" style="margin-bottom:14px;">
+            <label>開始日期</label>
+            <input type="date" class="form-control" id="editBudgetStart">
+        </div>
+        <div class="form-group" style="margin-bottom:14px;">
+            <label>結束日期</label>
+            <input type="date" class="form-control" id="editBudgetEnd">
+        </div>
+        <div class="modal-footer">
+            <button class="btn-cancel" onclick="closeEditBudgetModal()">取消</button>
+            <button class="btn-submit" id="editBudgetConfirmBtn" onclick="confirmEditBudget()">儲存</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API = 'http://localhost:3000/api';
+    let currentSpaceId  = null;
+    let spaceMembers    = [];
+    let currentUser     = {};
+    let settleDebtId    = null;
+    let settleMaxAmount = 0;
+    let isPersonal      = false;
+
+    function authHeaders() {
+        return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('split_token')}` };
+    }
+
+    function escapeHtml(str) {
+        return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+    }
+
+    function today() { return new Date().toISOString().split('T')[0]; }
+
+    function showAlert(id, msg, type) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = msg;
+        el.className = `alert ${type} show`;
+        setTimeout(() => { el.className = 'alert'; }, 3500);
+    }
+
+    // ── 初始化 ──
+    window.addEventListener('DOMContentLoaded', async () => {
+        if (!localStorage.getItem('split_token')) { location.href = 'auth.html'; return; }
+        currentUser = JSON.parse(localStorage.getItem('split_user') || '{}');
+        currentSpaceId = window.location.hash.replace('#', '') || null;
+
+        if (!currentSpaceId) {
+            document.getElementById('renderSpaceName').textContent = '找不到空間';
+            document.getElementById('panel-transactions').innerHTML =
+                `<div class="empty-state" style="color:#dc2626;">URL 缺少 id，請從 <a href="dashboard.html">Dashboard</a> 重新進入。</div>`;
+            return;
+        }
+
+        document.getElementById('txDate').value = today();
+
+        // 個人空間
+        if (currentSpaceId === 'personal') {
+            isPersonal = true;
+            // 先取得或建立個人空間的真實 space_id
+            try {
+                const res  = await fetch(`${API}/spaces/personal`, { headers: authHeaders() });
+                const data = await res.json();
+                if (res.ok && data.space_id) {
+                    currentSpaceId = data.space_id;
+                }
+            } catch(e) {}
+            console.log('個人空間 space_id:', currentSpaceId);
+            document.getElementById('renderSpaceName').textContent = '個人空間';
+            spaceMembers = [{ user_id: currentUser.user_id, username: currentUser.username || '我' }];
+            renderMemberDropdowns();
+
+            // 隱藏個人空間不需要的功能
+            document.getElementById('navItems').style.display = 'none';
+            document.getElementById('navDebts').style.display = 'none';
+
+            loadTransactions();
+            loadDebts();
+            loadBudgets();
+            return;
+        }
+
+        // 群組空間
+        document.getElementById('renderSpaceName').textContent = '載入中...';
+        try {
+            const res  = await fetch(`${API}/spaces/${currentSpaceId}`, { headers: authHeaders() });
+            const data = await res.json();
+            if (res.status === 401) { location.href = 'auth.html'; return; }
+            if (!res.ok) {
+                document.getElementById('renderSpaceName').textContent = '載入失敗';
+                document.getElementById('panel-transactions').innerHTML =
+                    `<div class="empty-state" style="color:#dc2626;">無法載入空間：${data.message || '未知錯誤'}<br><a href="dashboard.html" style="color:#2ca42c;">← 返回 Dashboard</a></div>`;
+                return;
+            }
+            document.getElementById('renderSpaceName').textContent = data.space.space_name;
+            spaceMembers = data.space.members || [];
+            renderMemberDropdowns();
+        } catch (e) {
+            document.getElementById('renderSpaceName').textContent = '連線失敗';
+            return;
+        }
+
+        loadTransactions();
+        loadItems();
+        loadDebts();
+        loadBudgets();
+    });
+
+    function switchPanel(panelId, btn) {
+        document.querySelectorAll('.panel-content').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(`panel-${panelId}`).classList.add('active');
+        btn.classList.add('active');
+    }
+
+    function renderMemberDropdowns() {
+        ['itemHolder','debtorId','creditorId'].forEach(id => {
+            const sel = document.getElementById(id);
+            if (!sel) return;
+            sel.innerHTML = '';
+            spaceMembers.forEach(m => sel.appendChild(new Option(m.username, m.user_id)));
+        });
+    }
+
+    // ════════════════════════════════════════════
+    //  收支明細
+    // ════════════════════════════════════════════
+    async function loadTransactions() {
+        try {
+            const res  = await fetch(`${API}/spaces/${currentSpaceId}/transactions?limit=50`, { headers: authHeaders() });
+            const data = await res.json();
+            if (!res.ok) { document.getElementById('txTableBody').innerHTML = `<tr><td colspan="7" class="empty-state">載入失敗：${data.message||''}</td></tr>`; return; }
+            renderTransactions(data.transactions || []);
+        } catch (e) {
+            document.getElementById('txTableBody').innerHTML = `<tr><td colspan="7" class="empty-state">伺服器連線失敗</td></tr>`;
+        }
+    }
+
+    function renderTransactions(list) {
+        const tbody = document.getElementById('txTableBody');
+        if (!list.length) { tbody.innerHTML = `<tr><td colspan="7" class="empty-state">尚無收支紀錄</td></tr>`; return; }
+        tbody.innerHTML = list.map(t => {
+            const isSelf = t.user_id === currentUser.user_id;
+            return `<tr>
+                <td>${t.transaction_date?.slice(0,10)||'-'}</td>
+                <td>${escapeHtml(t.username||'-')}</td>
+                <td><span class="${t.transaction_type==='income'?'badge-income':'badge-expense'}">${t.transaction_type==='income'?'收入':'支出'}</span></td>
+                <td>${escapeHtml(t.category_name||'無分類')}</td>
+                <td>${escapeHtml(t.description||'-')}</td>
+                <td style="font-weight:700;">$${Number(t.amount).toLocaleString()}</td>
+                <td>${isSelf?`<button class="btn-action danger" onclick="deleteTransaction(${t.transaction_id})">刪除</button>`:'-'}</td>
+            </tr>`;
+        }).join('');
+    }
+
+    async function addTransaction() {
+        const btn  = document.getElementById('txSubmitBtn');
+        const type = document.getElementById('txType').value;
+        const amt  = document.getElementById('txAmount').value;
+        const date = document.getElementById('txDate').value;
+        const cat  = document.getElementById('txCategory').value;
+        const desc = document.getElementById('txDesc').value.trim();
+        if (!amt || !date) { showAlert('tx-alert','請填寫金額與日期','error'); return; }
+        btn.disabled = true;
+        try {
+            const res  = await fetch(`${API}/spaces/${currentSpaceId}/transactions`, {
+                method:'POST', headers: authHeaders(),
+                body: JSON.stringify({ transaction_type:type, amount:parseFloat(amt), transaction_date:date, category_id:cat||undefined, description:desc||undefined })
+            });
+            const data = await res.json();
+            if (!res.ok) { showAlert('tx-alert', data.message||'新增失敗','error'); return; }
+            showAlert('tx-alert','記帳成功！','success');
+            document.getElementById('txAmount').value = '';
+            document.getElementById('txDesc').value = '';
+            loadTransactions();
+        } catch(e) { showAlert('tx-alert','伺服器連線失敗','error'); }
+        finally { btn.disabled = false; }
+    }
+
+    async function deleteTransaction(txId) {
+        if (!confirm('確定要刪除此筆紀錄？')) return;
+        try {
+            await fetch(`${API}/spaces/${currentSpaceId}/transactions/${txId}`, { method:'DELETE', headers:authHeaders() });
+            showAlert('tx-alert','已刪除','success');
+            loadTransactions();
+        } catch(e) { showAlert('tx-alert','伺服器連線失敗','error'); }
+    }
+
+    // ════════════════════════════════════════════
+    //  公共財分攤
+    // ════════════════════════════════════════════
+    async function loadItems() {
+        try {
+            const res  = await fetch(`${API}/spaces/${currentSpaceId}/items`, { headers: authHeaders() });
+            const data = await res.json();
+            if (!res.ok) { document.getElementById('itemTableBody').innerHTML = `<tr><td colspan="8" class="empty-state">載入失敗</td></tr>`; return; }
+            renderItems(data.items || []);
+        } catch(e) { document.getElementById('itemTableBody').innerHTML = `<tr><td colspan="8" class="empty-state">伺服器連線失敗</td></tr>`; }
+    }
+
+    function renderItems(list) {
+        const tbody = document.getElementById('itemTableBody');
+        if (!list.length) { tbody.innerHTML = `<tr><td colspan="8" class="empty-state">尚無公共財記錄</td></tr>`; return; }
+        tbody.innerHTML = list.map(i => {
+            const total = (parseFloat(i.unit_price)*parseFloat(i.quantity)).toLocaleString();
+            return `<tr>
+                <td>${escapeHtml(i.item_name)}</td>
+                <td>$${Number(i.unit_price).toLocaleString()}</td>
+                <td>${i.quantity}</td>
+                <td style="font-weight:700;">$${total}</td>
+                <td>${escapeHtml(i.buyer_name)}</td>
+                <td>${escapeHtml(i.holder_name)}</td>
+                <td>${i.created_at?.slice(0,10)||'-'}</td>
+                <td>${i.buyer_id===currentUser.user_id?`<button class="btn-action danger" onclick="deleteItem(${i.item_id})">刪除</button>`:'-'}</td>
+            </tr>`;
+        }).join('');
+    }
+
+    function openSplitModal() {
+        const name  = document.getElementById('itemName').value.trim();
+        const price = parseFloat(document.getElementById('itemPrice').value);
+        const qty   = parseFloat(document.getElementById('itemQty').value)||1;
+        if (!name||!price) { showAlert('item-alert','請填寫物品名稱與單價','error'); return; }
+        const total = price*qty;
+        document.getElementById('splitTotalDisplay').textContent = `$${total.toLocaleString()}`;
+        document.getElementById('splitBuyerDisplay').textContent = currentUser.username||'你';
+        const listEl = document.getElementById('splitMemberList');
+        listEl.innerHTML = '';
+        const others = spaceMembers.filter(m => m.user_id !== currentUser.user_id);
+        if (!others.length) { showAlert('item-alert','空間中沒有其他成員可以分攤','error'); return; }
+        const defaultShare = (total/(others.length+1)).toFixed(0);
+        others.forEach(m => {
+            const row = document.createElement('div');
+            row.className = 'member-split-row';
+            row.innerHTML = `
+                <label><input type="checkbox" class="split-check" data-uid="${m.user_id}" checked>${escapeHtml(m.username)}</label>
+                <input type="number" class="form-control split-amount" data-uid="${m.user_id}" value="${defaultShare}" min="0.01" step="0.01" style="width:110px;">`;
+            listEl.appendChild(row);
+        });
+        document.getElementById('split-alert').className = 'alert';
+        document.getElementById('splitModal').classList.add('active');
+    }
+
+    function closeSplitModal() { document.getElementById('splitModal').classList.remove('active'); }
+
+    async function submitItem() {
+        const name     = document.getElementById('itemName').value.trim();
+        const price    = parseFloat(document.getElementById('itemPrice').value);
+        const qty      = parseFloat(document.getElementById('itemQty').value)||1;
+        const holderId = parseInt(document.getElementById('itemHolder').value);
+        const btn      = document.getElementById('splitConfirmBtn');
+        const splitWith = [];
+        document.querySelectorAll('.split-check:checked').forEach(cb => {
+            const uid = parseInt(cb.dataset.uid);
+            const amt = parseFloat(document.querySelector(`.split-amount[data-uid="${uid}"]`)?.value);
+            if (!isNaN(amt) && amt>0) splitWith.push({ user_id:uid, share_amount:amt });
+        });
+        btn.disabled = true;
+        try {
+            const res  = await fetch(`${API}/spaces/${currentSpaceId}/items`, {
+                method:'POST', headers:authHeaders(),
+                body: JSON.stringify({ item_name:name, unit_price:price, quantity:qty, holder_id:holderId, split_with:splitWith })
+            });
+            const data = await res.json();
+            if (!res.ok) { showAlert('split-alert', data.message||'新增失敗','error'); btn.disabled=false; return; }
+            closeSplitModal();
+            showAlert('item-alert',`新增成功！已建立 ${splitWith.length} 筆分攤債務`,'success');
+            document.getElementById('itemName').value = '';
+            document.getElementById('itemPrice').value = '';
+            document.getElementById('itemQty').value = '1';
+            loadItems(); loadDebts();
+        } catch(e) { showAlert('split-alert','伺服器連線失敗','error'); }
+        finally { btn.disabled=false; }
+    }
+
+    async function deleteItem(itemId) {
+        if (!confirm('確定要刪除此項目？')) return;
+        try {
+            await fetch(`${API}/spaces/${currentSpaceId}/items/${itemId}`, { method:'DELETE', headers:authHeaders() });
+            showAlert('item-alert','已刪除','success'); loadItems();
+        } catch(e) { showAlert('item-alert','伺服器連線失敗','error'); }
+    }
+
+    // ════════════════════════════════════════════
+    //  債務追蹤
+    // ════════════════════════════════════════════
+async function loadDebts() {
+    try {
+        // 個人空間：查詢所有空間的債務
+        const url = isPersonal
+            ? `${API}/debts/all`
+            : `${API}/spaces/${currentSpaceId}/debts`;
+
+        const res  = await fetch(url, { headers: authHeaders() });
+        const data = await res.json();
+        if (!res.ok) { document.getElementById('debtTableBody').innerHTML = `<tr><td colspan="7" class="empty-state">載入失敗：${data.message||''}</td></tr>`; return; }
+        const s = data.summary || {};
+        document.getElementById('debtSummaryDisplay').innerHTML =
+            `我欠別人：<strong style="color:#dc2626;">$${Number(s.i_owe||0).toLocaleString()}</strong> &nbsp;|&nbsp; 別人欠我：<strong style="color:#16a34a;">$${Number(s.owed_to_me||0).toLocaleString()}</strong>`;
+        renderDebts(data.debts || []);
+    } catch(e) {
+        document.getElementById('debtTableBody').innerHTML = `<tr><td colspan="7" class="empty-state">伺服器連線失敗</td></tr>`;
+    }
+}
+
+    function renderDebts(list) {
+        const tbody = document.getElementById('debtTableBody');
+        if (!list.length) { tbody.innerHTML = `<tr><td colspan="7" class="empty-state">尚無債務紀錄</td></tr>`; return; }
+        tbody.innerHTML = list.map(d => {
+            const statusLabel = {pending:'未結清',partial:'部分還款',paid:'已結清'}[d.status]||d.status;
+            const statusColor = d.status==='paid'?'#16a34a':d.status==='partial'?'#b45309':'#dc2626';
+            const canSettle = d.debtor_id===currentUser.user_id && d.status!=='paid';
+            const canDelete = d.creditor_id===currentUser.user_id;
+            const source = d.source_item_name?`分攤：${escapeHtml(d.source_item_name)}`:'手動補登';
+            return `<tr>
+                <td>${escapeHtml(d.debtor_name)}</td>
+                <td>${escapeHtml(d.creditor_name)}</td>
+                <td>$${Number(d.original_amount).toLocaleString()}</td>
+                <td style="font-weight:700;color:#dc2626;">$${Number(d.remaining_amount).toLocaleString()}</td>
+                <td>${source}${isPersonal && d.space_name ? ` <small style="color:#888;">（${escapeHtml(d.space_name)}）</small>` : ''}</td>
+                <td style="font-weight:700;color:${statusColor};">${statusLabel}</td>
+                <td style="display:flex;gap:6px;flex-wrap:wrap;">
+                    ${canSettle?`<button class="btn-action" onclick="openSettleModal(${d.debt_id},${d.remaining_amount})">確認還款</button>`:''}
+                    ${canDelete?`<button class="btn-action danger" onclick="deleteDebt(${d.debt_id})">刪除</button>`:''}
+                    ${!canSettle&&!canDelete?'-':''}
+                </td>
+            </tr>`;
+        }).join('');
+    }
+
+    async function addManualDebt() {
+        const btn        = document.getElementById('debtSubmitBtn');
+        const debtorId   = document.getElementById('debtorId').value;
+        const creditorId = document.getElementById('creditorId').value;
+        const amount     = document.getElementById('debtAmount').value;
+        if (!debtorId||!creditorId||!amount) { showAlert('debt-alert','請填寫所有欄位','error'); return; }
+        if (debtorId===creditorId) { showAlert('debt-alert','債務人與債主不能是同一人','error'); return; }
+        btn.disabled = true;
+        try {
+            const res  = await fetch(`${API}/spaces/${currentSpaceId}/debts`, {
+                method:'POST', headers:authHeaders(),
+                body: JSON.stringify({ debtor_id:parseInt(debtorId), creditor_id:parseInt(creditorId), original_amount:parseFloat(amount) })
+            });
+            const data = await res.json();
+            if (!res.ok) { showAlert('debt-alert', data.message||'建立失敗','error'); return; }
+            showAlert('debt-alert','債務補登成功！','success');
+            document.getElementById('debtAmount').value = '';
+            document.getElementById('debtReason').value = '';
+            loadDebts();
+        } catch(e) { showAlert('debt-alert','伺服器連線失敗','error'); }
+        finally { btn.disabled=false; }
+    }
+
+    function openSettleModal(debtId, remaining) {
+        settleDebtId = debtId; settleMaxAmount = parseFloat(remaining);
+        document.getElementById('settleRemaining').textContent = `$${settleMaxAmount.toLocaleString()}`;
+        document.getElementById('settleAmount').value = settleMaxAmount;
+        document.getElementById('settleModal').classList.add('active');
+    }
+    function closeSettleModal() { document.getElementById('settleModal').classList.remove('active'); settleDebtId=null; }
+
+    async function confirmSettle() {
+        const btn = document.getElementById('settleConfirmBtn');
+        const amount = parseFloat(document.getElementById('settleAmount').value);
+        if (!amount||amount<=0) { alert('請輸入有效金額'); return; }
+        if (amount>settleMaxAmount) { alert(`還款金額不可超過剩餘 $${settleMaxAmount}`); return; }
+        btn.disabled = true;
+        try {
+            const res  = await fetch(`${API}/spaces/${currentSpaceId}/debts/${settleDebtId}/settle`, {
+                method:'POST', headers:authHeaders(), body:JSON.stringify({ amount })
+            });
+            const data = await res.json();
+            if (!res.ok) { alert(data.message||'還款失敗'); btn.disabled=false; return; }
+            closeSettleModal();
+            showAlert('debt-alert', data.message||'還款成功！','success');
+            loadDebts();
+        } catch(e) { alert('伺服器連線失敗'); }
+        finally { btn.disabled=false; }
+    }
+
+    async function deleteDebt(debtId) {
+        if (!confirm('確定要刪除此債務紀錄？')) return;
+        try {
+            await fetch(`${API}/spaces/${currentSpaceId}/debts/${debtId}`, { method:'DELETE', headers:authHeaders() });
+            showAlert('debt-alert','已刪除','success'); loadDebts();
+        } catch(e) { showAlert('debt-alert','伺服器連線失敗','error'); }
+    }
+
+    // ════════════════════════════════════════════
+    //  預算監控
+    // ════════════════════════════════════════════
+    async function loadBudgets() {
+        try {
+            const res  = await fetch(`${API}/spaces/${currentSpaceId}/budgets`, { headers: authHeaders() });
+            const data = await res.json();
+            if (!res.ok) { document.getElementById('budgetCards').innerHTML = `<div class="empty-state">載入失敗</div>`; return; }
+            renderBudgetCards(data.budgets || []);
+        } catch(e) { document.getElementById('budgetCards').innerHTML = `<div class="empty-state">伺服器連線失敗</div>`; }
+    }
+
+    function renderBudgetCards(list) {
+        const container = document.getElementById('budgetCards');
+        if (!list.length) { container.innerHTML = `<div class="empty-state">尚無預算設定</div>`; return; }
+        container.innerHTML = list.map(b => {
+            const pct = parseFloat(b.progress_pct||0);
+            const isDanger = b.is_exceeded;
+            return `<div class="budget-card">
+                <div class="budget-card-name">${escapeHtml(b.budget_name)}</div>
+                <div class="budget-card-meta">
+                    ${b.category_name?`分類：${escapeHtml(b.category_name)}　`:''}
+                    ${b.start_date?.slice(0,10)} ～ ${b.end_date?.slice(0,10)}
+                </div>
+                <div class="budget-numbers">
+                    <span>已花費 <strong style="color:${isDanger?'#dc2626':'#000'};">$${Number(b.spent_amount).toLocaleString()}</strong></span>
+                    <span>預算 $${Number(b.budget_amount).toLocaleString()}</span>
+                </div>
+                <div class="progress-track">
+                    <div class="progress-fill ${isDanger?'danger':''}" style="width:${Math.min(pct,100)}%;"></div>
+                </div>
+                ${isDanger
+                    ? `<div class="budget-exceeded">⚠️ 已超支！超出 $${Number(Math.abs(b.remaining)).toLocaleString()}</div>`
+                    : `<div style="font-size:0.8rem;color:#666;margin-top:6px;">剩餘 $${Number(b.remaining).toLocaleString()}（${pct}% 已用）</div>`}
+                <div class="budget-card-actions">
+                    <button class="btn-action" onclick="openEditBudgetModal(${b.budget_id},'${escapeHtml(b.budget_name)}',${b.budget_amount},'${b.start_date?.slice(0,10)}','${b.end_date?.slice(0,10)}')">✏️ 編輯</button>
+                    <button class="btn-action danger" onclick="deleteBudget(${b.budget_id})">🗑 刪除</button>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    async function addBudget() {
+        const btn   = document.getElementById('budgetSubmitBtn');
+        const name  = document.getElementById('budgetName').value.trim();
+        const amt   = document.getElementById('budgetAmountInput').value;
+        const cat   = document.getElementById('budgetCategory').value;
+        const start = document.getElementById('budgetStart').value;
+        const end   = document.getElementById('budgetEnd').value;
+        if (!name||!amt||!start||!end) { showAlert('budget-alert','請填寫所有必要欄位','error'); return; }
+        if (end<start) { showAlert('budget-alert','結束日期不得早於開始日期','error'); return; }
+        btn.disabled = true;
+        try {
+            const res  = await fetch(`${API}/spaces/${currentSpaceId}/budgets`, {
+                method:'POST', headers:authHeaders(),
+                body: JSON.stringify({ budget_name:name, budget_amount:parseFloat(amt), category_id:cat||undefined, start_date:start, end_date:end })
+            });
+            const data = await res.json();
+            if (!res.ok) { showAlert('budget-alert', data.message||'建立失敗','error'); return; }
+            showAlert('budget-alert','預算建立成功！','success');
+            document.getElementById('budgetName').value = '';
+            document.getElementById('budgetAmountInput').value = '';
+            document.getElementById('budgetStart').value = '';
+            document.getElementById('budgetEnd').value = '';
+            loadBudgets();
+        } catch(e) { showAlert('budget-alert','伺服器連線失敗','error'); }
+        finally { btn.disabled=false; }
+    }
+
+    // 編輯預算 Modal
+    function openEditBudgetModal(id, name, amount, start, end) {
+        document.getElementById('editBudgetId').value     = id;
+        document.getElementById('editBudgetName').value   = name;
+        document.getElementById('editBudgetAmount').value = amount;
+        document.getElementById('editBudgetStart').value  = start;
+        document.getElementById('editBudgetEnd').value    = end;
+        document.getElementById('editBudgetModal').classList.add('active');
+    }
+    function closeEditBudgetModal() { document.getElementById('editBudgetModal').classList.remove('active'); }
+
+    async function confirmEditBudget() {
+        const btn    = document.getElementById('editBudgetConfirmBtn');
+        const id     = document.getElementById('editBudgetId').value;
+        const name   = document.getElementById('editBudgetName').value.trim();
+        const amount = document.getElementById('editBudgetAmount').value;
+        const start  = document.getElementById('editBudgetStart').value;
+        const end    = document.getElementById('editBudgetEnd').value;
+        if (!name||!amount||!start||!end) { alert('請填寫所有欄位'); return; }
+        if (end<start) { alert('結束日期不得早於開始日期'); return; }
+        btn.disabled = true;
+        try {
+            const res  = await fetch(`${API}/spaces/${currentSpaceId}/budgets/${id}`, {
+                method:'PUT', headers:authHeaders(),
+                body: JSON.stringify({ budget_name:name, budget_amount:parseFloat(amount), start_date:start, end_date:end })
+            });
+            const data = await res.json();
+            if (!res.ok) { alert(data.message||'更新失敗'); btn.disabled=false; return; }
+            closeEditBudgetModal();
+            showAlert('budget-alert','預算已更新！','success');
+            loadBudgets();
+        } catch(e) { alert('伺服器連線失敗'); }
+        finally { btn.disabled=false; }
+    }
+
+    async function deleteBudget(budgetId) {
+        if (!confirm('確定要刪除此預算？')) return;
+        try {
+            await fetch(`${API}/spaces/${currentSpaceId}/budgets/${budgetId}`, { method:'DELETE', headers:authHeaders() });
+            showAlert('budget-alert','已刪除','success'); loadBudgets();
+        } catch(e) { showAlert('budget-alert','伺服器連線失敗','error'); }
+    }
+
+    document.getElementById('settleModal').addEventListener('click', closeSettleModal);
+    document.getElementById('splitModal').addEventListener('click', closeSplitModal);
+    document.getElementById('editBudgetModal').addEventListener('click', closeEditBudgetModal);
+</script>
+</body>
+</html>

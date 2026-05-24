@@ -1,0 +1,344 @@
+
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>S.P.L.I.T - 身份驗證</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;900&display=swap');
+ 
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'DM Sans', 'Segoe UI', sans-serif;
+        }
+ 
+        body {
+            background-color: #ffffff;
+            min-height: 100vh;
+            color: #000000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+ 
+        /* 中央黑框卡片 */
+        .auth-card {
+            background: #ffffff;
+            border: 2px solid #000000;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 400px;
+            padding: 40px;
+            box-shadow: 6px 6px 0px #000000; /* 硬陰影 brutalist 感 */
+        }
+ 
+        /* 品牌標題 */
+        .brand {
+            text-align: center;
+            margin-bottom: 6px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 4px;
+            color: #aaaaaa;
+            text-transform: uppercase;
+        }
+ 
+        h3 {
+            font-size: 1.8rem;
+            font-weight: 900;
+            text-align: center;
+            margin-bottom: 28px;
+            letter-spacing: 0.5px;
+            color: #000000;
+            transition: opacity 0.2s ease;
+        }
+ 
+        /* 表單群組 */
+        .form-group {
+            margin-bottom: 18px;
+        }
+ 
+        .form-group label {
+            display: block;
+            margin-bottom: 7px;
+            font-weight: 700;
+            font-size: 0.88rem;
+            color: #111111;
+        }
+ 
+        .form-control {
+            width: 100%;
+            padding: 11px 14px;
+            border: 2px solid #000000;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #000;
+            background: #ffffff;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+ 
+        .form-control::placeholder {
+            color: #aaaaaa;
+            font-weight: 400;
+        }
+ 
+        .form-control:focus {
+            outline: none;
+            border-color: #2ca42c;
+            box-shadow: 0 0 0 3px rgba(44, 164, 44, 0.15);
+        }
+ 
+        /* 訊息欄 */
+        .msg {
+            font-size: 0.87rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 14px;
+            min-height: 20px;
+            padding: 0 4px;
+            transition: all 0.2s ease;
+        }
+        .msg.error  { color: #dc2626; }
+        .msg.success { color: #16a34a; }
+ 
+        /* 主按鈕：黑色膠囊 */
+        .btn-submit {
+            width: 100%;
+            padding: 13px;
+            background-color: #000000;
+            color: #ffffff;
+            border: 2px solid #000000;
+            border-radius: 50px;
+            font-size: 0.98rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+            margin-top: 8px;
+            letter-spacing: 0.3px;
+        }
+ 
+        .btn-submit:hover:not(:disabled) {
+            background-color: #2ca42c;
+            border-color: #2ca42c;
+            transform: translateY(-1px);
+        }
+ 
+        .btn-submit:active:not(:disabled) {
+            transform: translateY(0);
+        }
+ 
+        .btn-submit:disabled {
+            background-color: #cccccc;
+            border-color: #cccccc;
+            cursor: not-allowed;
+        }
+ 
+        /* 切換模式 */
+        .auth-switch {
+            text-align: center;
+            margin-top: 22px;
+            font-size: 0.88rem;
+            color: #555555;
+            font-weight: 600;
+        }
+ 
+        .auth-switch span {
+            color: #2ca42c;
+            cursor: pointer;
+            font-weight: 700;
+            margin-left: 4px;
+        }
+ 
+        .auth-switch span:hover {
+            text-decoration: underline;
+        }
+ 
+        /* 隱藏動畫 */
+        .hidden-field {
+            overflow: hidden;
+            max-height: 0;
+            opacity: 0;
+            transition: max-height 0.3s ease, opacity 0.3s ease, margin-bottom 0.3s ease;
+            margin-bottom: 0;
+        }
+ 
+        .hidden-field.visible {
+            max-height: 120px;
+            opacity: 1;
+            margin-bottom: 18px;
+        }
+    </style>
+</head>
+<body>
+ 
+    <div class="auth-card">
+        <div class="brand">S · P · L · I · T</div>
+        <h3 id="cardTitle">歡迎回來</h3>
+ 
+        <div class="msg" id="msg"></div>
+ 
+        <!-- 使用者名稱（僅註冊時顯示，帶動畫） -->
+        <div class="hidden-field" id="nameGroup">
+            <label for="username">使用者名稱</label>
+            <input type="text" id="username" class="form-control" placeholder="例如：陳聖翰">
+        </div>
+ 
+        <div class="form-group">
+            <label for="email">電子郵件</label>
+            <input type="email" id="email" class="form-control" placeholder="yourname@example.com">
+        </div>
+ 
+        <div class="form-group">
+            <label for="password">密碼</label>
+            <input type="password" id="password" class="form-control" placeholder="請輸入密碼（至少 6 碼）">
+        </div>
+ 
+        <button class="btn-submit" id="btnSubmit" onclick="handleSubmit()">登入系統</button>
+ 
+        <div class="auth-switch" id="switchPrompt">
+            還沒有帳號嗎？<span onclick="toggleMode()">註冊新帳號</span>
+        </div>
+    </div>
+ 
+    <script>
+        const API = 'http://localhost:3000/api';
+        let isRegisterMode = false; // 預設登入模式
+ 
+        function showMsg(text, type) {
+            const el = document.getElementById('msg');
+            el.textContent = text;
+            el.className = 'msg ' + type;
+        }
+ 
+        function clearMsg() {
+            const el = document.getElementById('msg');
+            el.textContent = '';
+            el.className = 'msg';
+        }
+ 
+        function clearFields() {
+            document.getElementById('username').value = '';
+            document.getElementById('email').value = '';
+            document.getElementById('password').value = '';
+        }
+ 
+        function toggleMode() {
+            isRegisterMode = !isRegisterMode;
+ 
+            // 切換時清空欄位與訊息（第二個版本新功能）
+            clearMsg();
+            clearFields();
+ 
+            const nameGroup = document.getElementById('nameGroup');
+            const btnSubmit = document.getElementById('btnSubmit');
+            const cardTitle = document.getElementById('cardTitle');
+            const switchPrompt = document.getElementById('switchPrompt');
+ 
+            if (isRegisterMode) {
+                cardTitle.textContent = '會員註冊';
+                nameGroup.classList.add('visible');
+                btnSubmit.textContent = '建立帳號';
+                switchPrompt.innerHTML = '已經有帳號了？<span onclick="toggleMode()">切換到登入</span>';
+            } else {
+                cardTitle.textContent = '歡迎回來';
+                nameGroup.classList.remove('visible');
+                btnSubmit.textContent = '登入系統';
+                switchPrompt.innerHTML = '還沒有帳號嗎？<span onclick="toggleMode()">註冊新帳號</span>';
+            }
+        }
+ 
+        async function handleSubmit() {
+            const email    = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const btn      = document.getElementById('btnSubmit');
+ 
+            clearMsg();
+ 
+            if (!email || !password) { showMsg('請填寫所有必要欄位', 'error'); return; }
+ 
+            btn.disabled = true;
+ 
+            try {
+                if (isRegisterMode) {
+                    const username = document.getElementById('username').value.trim();
+                    if (!username) {
+                        showMsg('請填寫使用者名稱', 'error');
+                        btn.disabled = false;
+                        return;
+                    }
+                    if (password.length < 6) {
+                        showMsg('密碼至少需要 6 個字元', 'error');
+                        btn.disabled = false;
+                        return;
+                    }
+ 
+                    btn.textContent = '正在建立帳號...';
+ 
+                    const res = await fetch(`${API}/auth/register`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ user_name: username, email, password })
+                    });
+                    const data = await res.json();
+ 
+                    if (!res.ok) {
+                        showMsg(data.message || '註冊失敗，信箱或名稱可能已被使用', 'error');
+                        btn.disabled = false;
+                        btn.textContent = '建立帳號';
+                        return;
+                    }
+ 
+                    localStorage.setItem('split_token', data.token);
+                    localStorage.setItem('split_user', JSON.stringify(data.user));
+                    showMsg('註冊成功！正在跳轉...', 'success');
+                    setTimeout(() => { window.location.href = 'dashboard.html'; }, 1000);
+ 
+                } else {
+                    btn.textContent = '正在驗證登入...';
+ 
+                    const res = await fetch(`${API}/auth/login`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, password })
+                    });
+                    const data = await res.json();
+ 
+                    if (!res.ok) {
+                        showMsg(data.message || '登入失敗，請確認帳號密碼', 'error');
+                        btn.disabled = false;
+                        btn.textContent = '登入系統';
+                        return;
+                    }
+ 
+                    localStorage.setItem('split_token', data.token);
+                    localStorage.setItem('split_user', JSON.stringify(data.user));
+                    showMsg('登入成功！正在跳轉...', 'success');
+                    setTimeout(() => { window.location.href = 'dashboard.html'; }, 800);
+                }
+            } catch (err) {
+                showMsg('無法連線到伺服器，請確認 API 是否啟動', 'error');
+                btn.disabled = false;
+                btn.textContent = isRegisterMode ? '建立帳號' : '登入系統';
+            }
+        }
+ 
+        // Enter 鍵送出
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Enter') handleSubmit();
+        });
+ 
+        // 已登入直接跳轉（DOMContentLoaded 版本，更安全）
+        window.addEventListener('DOMContentLoaded', () => {
+            if (localStorage.getItem('split_token')) {
+                window.location.href = 'dashboard.html';
+            }
+        });
+    </script>
+</body>
+</html>
+ 
